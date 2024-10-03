@@ -1,0 +1,59 @@
+# Pseudo code for selenoreferencing and image stitching
+
+# Procedure to load CSV file
+Procedure load_csv(file_path)
+    Return csv_data from file_path
+
+# Procedure to extract longitudes and latitudes from CSV data
+Procedure transform_coordinates(csv_data)
+    longitudes[] ← extract Longitude values from csv_data
+    latitudes[] ← extract Latitude values from csv_data
+    Return longitudes[], latitudes[]
+
+# Procedure to resize two images to the same height
+Procedure resize_to_same_height(img1, img2)
+    If height(img1) > height(img2)
+        img1 ← resize img1 to match height of img2
+    Else
+        img2 ← resize img2 to match height of img1
+    Return img1, img2
+
+# Main procedure to stitch images and save coordinates
+Procedure stitch_images(image_files[], csv_files[])
+    stitched_image ← None
+    stitched_longitudes[] ← []
+    stitched_latitudes[] ← []
+    
+    For i from 0 to length(image_files) - 1
+        image ← read image from image_files[i]
+        csv_data ← load_csv(csv_files[i])
+        longitudes[], latitudes[] ← transform_coordinates(csv_data)
+
+        If stitched_image == None
+            stitched_image ← image
+            stitched_longitudes.append(longitudes[])
+            stitched_latitudes.append(latitudes[])
+        Else
+            previous_csv_data ← load_csv(csv_files[i-1])
+            prev_longitudes[], prev_latitudes[] ← transform_coordinates(previous_csv_data)
+            
+            overlap_indices ← intersect(prev_longitudes[], longitudes[])
+            
+            If overlap_indices.size == 0
+                Continue to next iteration
+            
+            overlap_start_idx ← overlap_indices[2][0]
+            stitched_image, image ← resize_to_same_height(stitched_image, image)
+            stitched_image ← horizontal_stack(stitched_image, image[:, overlap_start_idx:])
+            stitched_longitudes.append(longitudes[overlap_start_idx:])
+            stitched_latitudes.append(latitudes[overlap_start_idx:])
+    
+    Return stitched_image, stitched_longitudes[], stitched_latitudes[]
+
+# Main procedure
+Procedure main
+    stitched_image, longitudes[], latitudes[] ← stitch_images(image_files, csv_files)
+    
+    Save stitched_image as "stitched_image.png"
+    Save longitudes[] and latitudes[] as "stitched_coordinates.csv"
+    Display stitched_image using OpenCV
